@@ -13,7 +13,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.markdown_render import render_markdown
-from app.openai_service import generate_questions_for_lesson
+from app.openai_service import (
+    answer_student_question,
+    generate_lesson_guide,
+    generate_questions_for_lesson,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("APP_DATA_DIR", BASE_DIR / "data"))
@@ -101,6 +105,17 @@ def init_db() -> None:
                     FOREIGN KEY (lesson_id) REFERENCES lessons(id)
                 )
                 """,
+                """
+                CREATE TABLE IF NOT EXISTS lesson_guides (
+                    lesson_id INTEGER PRIMARY KEY,
+                    terms_markdown TEXT NOT NULL DEFAULT '',
+                    faq_markdown TEXT NOT NULL DEFAULT '',
+                    anticipated_questions_markdown TEXT NOT NULL DEFAULT '',
+                    teacher_review_notes TEXT NOT NULL DEFAULT '',
+                    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (lesson_id) REFERENCES lessons(id)
+                )
+                """,
             ],
         )
         for lesson_no, title in LESSON_SEED:
@@ -147,6 +162,20 @@ def list_questions(db: sqlite3.Connection, lesson_id: int) -> list[sqlite3.Row]:
     ).fetchall()
 
 
+def get_or_create_guide(db: sqlite3.Connection, lesson_id: int) -> sqlite3.Row:
+    db.execute(
+        """
+        INSERT OR IGNORE INTO lesson_guides (lesson_id)
+        VALUES (?)
+        """,
+        (lesson_id,),
+    )
+    db.commit()
+    return db.execute(
+        "SELECT * FROM lesson_guides WHERE lesson_id = ?", (lesson_id,)
+    ).fetchone()
+
+
 @app.get("/", response_class=HTMLResponse)
 def home() -> RedirectResponse:
     return RedirectResponse("/lessons", status_code=303)
@@ -168,6 +197,7 @@ def edit_lesson(request: Request, lesson_id: int) -> HTMLResponse:
         lesson = get_lesson(db, lesson_id)
         assets = list_assets(db, lesson_id)
         questions = list_questions(db, lesson_id)
+        guide = get_or_create_guide(db, lesson_id)
     return templates.TemplateResponse(
         "lesson_edit.html",
         {
@@ -175,6 +205,7 @@ def edit_lesson(request: Request, lesson_id: int) -> HTMLResponse:
             "lesson": lesson,
             "assets": assets,
             "questions": questions,
+            "guide": guide,
             "show_admin_nav": True,
         },
     )
@@ -196,6 +227,73 @@ def save_lesson(
             WHERE id = ?
             """,
             (title, draft_text, published_text, status, lesson_id),
+        )
+        db.commit()
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
+
+
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/guide/generate")
+def generate_guide(lesson_id: int) -> RedirectResponse:
+    with connect() as db:
+        lesson = get_lesson(db, lesson_id)
+        lesson_text = lesson["published_text"] or lesson["draft_text"]
+        guide = generate_lesson_guide(lesson["title"], lesson_text)
+        db.execute(
+            """
+            INSERT INTO lesson_guides (
+                lesson_id, terms_markdown, faq_markdown,
+                anticipated_questions_markdown, teacher_review_notes, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(lesson_id) DO UPDATE SET
+                terms_markdown = excluded.terms_markdown,
+                faq_markdown = excluded.faq_markdown,
+                anticipated_questions_markdown = excluded.anticipated_questions_markdown,
+                teacher_review_notes = excluded.teacher_review_notes,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                lesson_id,
+                guide["terms_markdown"],
+                guide["faq_markdown"],
+                guide["anticipated_questions_markdown"],
+                guide["teacher_review_notes"],
+            ),
+        )
+        db.commit()
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
+
+
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/guide/save")
+def save_guide(
+    lesson_id: int,
+    terms_markdown: str = Form(""),
+    faq_markdown: str = Form(""),
+    anticipated_questions_markdown: str = Form(""),
+    teacher_review_notes: str = Form(""),
+) -> RedirectResponse:
+    with connect() as db:
+        db.execute(
+            """
+            INSERT INTO lesson_guides (
+                lesson_id, terms_markdown, faq_markdown,
+                anticipated_questions_markdown, teacher_review_notes, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(lesson_id) DO UPDATE SET
+                terms_markdown = excluded.terms_markdown,
+                faq_markdown = excluded.faq_markdown,
+                anticipated_questions_markdown = excluded.anticipated_questions_markdown,
+                teacher_review_notes = excluded.teacher_review_notes,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (
+                lesson_id,
+                terms_markdown,
+                faq_markdown,
+                anticipated_questions_markdown,
+                teacher_review_notes,
+            ),
         )
         db.commit()
     return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
@@ -367,11 +465,35 @@ def old_preview_lesson(lesson_id: int) -> RedirectResponse:
 
 @app.get("/lessons/{lesson_id}", response_class=HTMLResponse)
 def preview_lesson(request: Request, lesson_id: int) -> HTMLResponse:
+    return render_lesson_preview(request, lesson_id)
+
+
+@app.post("/lessons/{lesson_id}/ask", response_class=HTMLResponse)
+def ask_lesson_helper(
+    request: Request,
+    lesson_id: int,
+    question: str = Form(...),
+) -> HTMLResponse:
+    return render_lesson_preview(request, lesson_id, student_question=question)
+
+
+def render_lesson_preview(
+    request: Request,
+    lesson_id: int,
+    student_question: str = "",
+) -> HTMLResponse:
     with connect() as db:
         lesson = get_lesson(db, lesson_id)
         assets = list_assets(db, lesson_id)
         questions = list_questions(db, lesson_id)
+        guide_row = get_or_create_guide(db, lesson_id)
     lesson_text = lesson["published_text"] or lesson["draft_text"]
+    guide = dict(guide_row)
+    helper_answer = ""
+    if student_question.strip():
+        helper_answer = answer_student_question(
+            lesson["title"], lesson_text, guide, student_question.strip()
+        )
     return templates.TemplateResponse(
         "lesson_preview.html",
         {
@@ -380,6 +502,12 @@ def preview_lesson(request: Request, lesson_id: int) -> HTMLResponse:
             "lesson_html": render_markdown(lesson_text),
             "assets": assets,
             "questions": questions,
+            "guide": guide,
+            "student_question": student_question,
+            "helper_answer": helper_answer,
+            "helper_answer_html": render_markdown(helper_answer),
+            "guide_terms_html": render_markdown(guide.get("terms_markdown", "")),
+            "guide_faq_html": render_markdown(guide.get("faq_markdown", "")),
             "show_student_nav": True,
         },
     )

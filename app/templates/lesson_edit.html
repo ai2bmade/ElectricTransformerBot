@@ -35,28 +35,61 @@
   </section>
 
   <aside class="panel">
-    <h2>삽입 도구</h2>
+    <h2>OCR 먼저 적용</h2>
     <form method="post" enctype="multipart/form-data" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/ocr" class="toolbox">
       <h3>OCR 적용</h3>
+      <p class="hint">스캔 이미지나 캡처 이미지를 올리면 OCR 결과가 강사용 초안 아래에 추가됩니다.</p>
       <input type="file" name="image" accept="image/*,.pdf" required>
       <button type="submit">OCR 적용</button>
     </form>
 
+    <h2>Markdown 삽입 도구</h2>
     <form method="post" enctype="multipart/form-data" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/assets/image" class="toolbox">
       <h3>이미지 삽입</h3>
+      <p class="hint">업로드된 이미지는 공개 URL로 저장됩니다. 아래 자료 목록의 URL을 Markdown 본문에 넣으세요.</p>
       <input name="title" placeholder="이미지 제목" required>
       <input type="file" name="image" accept="image/*" required>
       <button type="submit">이미지 추가</button>
     </form>
 
-    <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/assets/link" class="toolbox">
-      <h3>YouTube/웹 링크 삽입</h3>
-      <input name="title" placeholder="링크 제목" required>
-      <input name="url" placeholder="https://..." required>
-      <button type="submit">링크 추가</button>
-    </form>
+    <div class="toolbox">
+      <h3>YouTube/웹 링크</h3>
+      <p class="hint">링크는 별도 저장 없이 학생 공개 본문에 Markdown으로 직접 넣을 수 있습니다.</p>
+      <pre>[영상 제목](https://youtube.com/...)</pre>
+    </div>
   </aside>
 </div>
+
+<section class="panel">
+  <div class="section-title-row">
+    <div>
+      <h2>AI 사전 학습 가이드</h2>
+      <p class="hint">레슨을 읽자마자 OpenAI가 용어, FAQ, 잠재 질문 답변을 만들고, 강사가 수정/검수 후 학생 도우미의 근거로 사용합니다.</p>
+    </div>
+    <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/guide/generate">
+      <button type="submit">AI 가이드 생성</button>
+    </form>
+  </div>
+  <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/guide/save" class="guide-form">
+    <label>
+      용어 파악
+      <textarea name="terms_markdown" rows="8">{{ guide.terms_markdown }}</textarea>
+    </label>
+    <label>
+      용어/개념 FAQ
+      <textarea name="faq_markdown" rows="8">{{ guide.faq_markdown }}</textarea>
+    </label>
+    <label>
+      잠재적 질문 리스트와 답
+      <textarea name="anticipated_questions_markdown" rows="10">{{ guide.anticipated_questions_markdown }}</textarea>
+    </label>
+    <label>
+      강사 검수 메모
+      <textarea name="teacher_review_notes" rows="5">{{ guide.teacher_review_notes }}</textarea>
+    </label>
+    <button type="submit">가이드 저장</button>
+  </form>
+</section>
 
 <section class="panel">
   <h2>문제 만들기</h2>
@@ -125,7 +158,12 @@
       {% for asset in assets %}
         <div class="asset-row">
           <span>{{ "이미지" if asset.kind == "image" else "링크" }}</span>
-          <a href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
+          <div>
+            <a href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
+            {% if asset.kind == "image" %}
+            <code>![{{ asset.title }}]({{ asset.url }})</code>
+            {% endif %}
+          </div>
         </div>
       {% endfor %}
       </div>

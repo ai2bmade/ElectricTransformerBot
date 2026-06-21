@@ -6,59 +6,98 @@
   <h1>{{ lesson.title }}</h1>
 </section>
 
-<article class="reader">
-  <h2>수업 내용</h2>
-  <div class="body-text markdown-body">
-    {{ lesson_html | safe }}
-  </div>
-</article>
-
-{% if assets %}
-<section class="panel">
-  <h2>보충 자료</h2>
-  <div class="media-grid">
-    {% for asset in assets %}
-      {% if asset.kind == "image" %}
-      <figure>
-        <img src="{{ asset.url }}" alt="{{ asset.title }}">
-        <figcaption>{{ asset.title }}</figcaption>
-      </figure>
-      {% else %}
-      <a class="link-tile" href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
-      {% endif %}
-    {% endfor %}
-  </div>
-</section>
-{% endif %}
-
-{% if questions %}
-<section class="panel">
-  <h2>학습 문제</h2>
-  <div class="question-list">
-    {% for question in questions %}
-    <article>
-      <span class="badge">
-        {% if question.question_type == "multiple_choice" %}4지선다{% elif question.question_type == "short_answer" %}짧은 답{% else %}긴 답{% endif %}
-      </span>
-      <strong>{{ question.prompt }}</strong>
-      {% if question.options_json %}
-      <ol class="choices">
-        {% for option in question.options_json.split("\n") %}
-        <li>{{ option }}</li>
-        {% endfor %}
-      </ol>
-      {% endif %}
-      {% if question.question_type == "long_answer" %}
-      <textarea rows="5" placeholder="답을 길게 작성해보세요."></textarea>
-      {% else %}
-      <input placeholder="답 입력">
-      {% endif %}
-      {% if question.reveal_timing == "immediate" %}
-      <p class="answer">정답: {{ question.answer }}</p>
-      {% endif %}
+<div class="student-layout">
+  <div>
+    <article class="reader">
+      <h2>수업 내용</h2>
+      <div class="body-text markdown-body">
+        {{ lesson_html | safe }}
+      </div>
     </article>
-    {% endfor %}
+
+    {% if assets %}
+    <section class="panel">
+      <h2>보충 자료</h2>
+      <div class="media-grid">
+        {% for asset in assets %}
+          {% if asset.kind == "image" %}
+          <figure>
+            <img src="{{ asset.url }}" alt="{{ asset.title }}">
+            <figcaption>{{ asset.title }}</figcaption>
+          </figure>
+          {% else %}
+          <a class="link-tile" href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if questions %}
+    <section class="panel">
+      <h2>학습 문제</h2>
+      <div class="question-list">
+        {% for question in questions %}
+        <article>
+          <span class="badge">
+            {% if question.question_type == "multiple_choice" %}4지선다{% elif question.question_type == "short_answer" %}짧은 답{% else %}긴 답{% endif %}
+          </span>
+          <strong>{{ question.prompt }}</strong>
+          {% if question.options_json %}
+          <ol class="choices">
+            {% for option in question.options_json.split("\n") %}
+            <li>{{ option }}</li>
+            {% endfor %}
+          </ol>
+          {% endif %}
+          {% if question.question_type == "long_answer" %}
+          <textarea rows="5" placeholder="답을 길게 작성해보세요."></textarea>
+          {% else %}
+          <input placeholder="답 입력">
+          {% endif %}
+          {% if question.reveal_timing == "immediate" %}
+          <p class="answer">정답: {{ question.answer }}</p>
+          {% endif %}
+        </article>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
   </div>
-</section>
-{% endif %}
+
+  <aside class="helper-panel">
+    <h2>학습 도우미</h2>
+    <p class="hint">이 레슨 내용과 강사가 검수한 용어/FAQ/예상 질문 자료를 우선 근거로 답합니다.</p>
+    <form method="post" action="/lessons/{{ lesson.id }}/ask" class="stack">
+      <label>
+        질문하기
+        <textarea name="question" rows="5" placeholder="예: 변압기는 왜 직류에서 작동하지 않나요?" required>{{ student_question }}</textarea>
+      </label>
+      <button type="submit">도우미에게 묻기</button>
+    </form>
+
+    {% if helper_answer %}
+    <div class="helper-answer markdown-body">
+      <h3>답변</h3>
+      {{ helper_answer_html | safe }}
+    </div>
+    {% endif %}
+
+    <div class="helper-source">
+      <h3>준비된 학습 근거</h3>
+      {% if guide.terms_markdown or guide.faq_markdown or guide.anticipated_questions_markdown %}
+      <details>
+        <summary>핵심 용어</summary>
+        <div class="markdown-body">{{ guide_terms_html | safe }}</div>
+      </details>
+      <details>
+        <summary>FAQ</summary>
+        <div class="markdown-body">{{ guide_faq_html | safe }}</div>
+      </details>
+      {% else %}
+      <p class="empty">강사가 아직 AI 사전 학습 가이드를 생성/검수하지 않았습니다.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
 {% endblock %}

@@ -147,10 +147,50 @@ h3 {
   margin-bottom: 16px;
 }
 
+.student-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.helper-panel {
+  position: sticky;
+  top: 76px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+
+.helper-answer,
+.helper-source {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.helper-source details {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.helper-source summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
 .panel,
 .reader {
   padding: 20px;
   margin-bottom: 16px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
 }
 
 .stack,
@@ -226,6 +266,23 @@ button:hover {
 .question-form {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
+}
+
+.guide-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.guide-form label:nth-child(3),
+.guide-form label:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .question-form .wide,
@@ -377,8 +434,14 @@ figcaption {
 
 @media (max-width: 760px) {
   .topbar,
-  .two-column {
+  .two-column,
+  .student-layout,
+  .section-title-row {
     display: block;
+  }
+
+  .helper-panel {
+    position: static;
   }
 
   .topbar nav {
@@ -387,6 +450,7 @@ figcaption {
 
   .question-form,
   .ai-generate-form,
+  .guide-form,
   .options {
     grid-template-columns: 1fr;
   }

@@ -53,3 +53,14 @@ $env:TESSERACT_CMD='G:\Codex\tools\tesseract\Tesseract-OCR\tesseract.exe'
 ```
 
 강사용 주소는 환경변수 `ADMIN_PREFIX`로 바꿀 수 있습니다.
+
+## 업로드 파일 저장
+
+이미지는 `APP_DATA_DIR/uploads`에 저장되고 `/uploads/...` 공개 URL로 제공됩니다.
+로컬에서 G 드라이브에 저장하려면 실행 전에 `APP_DATA_DIR`를 지정합니다.
+
+```powershell
+$env:APP_DATA_DIR='G:\Codex\learning_app_data'
+```
+
+Coolify에서는 compose volume이 `/data`에 연결되므로 업로드 파일은 컨테이너 재배포 후에도 유지됩니다.
