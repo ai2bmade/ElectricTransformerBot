@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% set title = lesson.title %}
+{% block content %}
+<section class="page-head compact">
+  <p class="eyebrow">Lecture Admin / Lesson {{ lesson.lesson_no }}</p>
+  <h1>{{ lesson.title }}</h1>
+  <p>강사용 원문과 학생 공개본을 분리해서 관리합니다.</p>
+</section>
+
+<div class="two-column">
+  <section class="panel">
+    <h2>레슨 편집</h2>
+    <form method="post" action="/admin/lessons/{{ lesson.id }}/save" class="stack">
+      <label>
+        제목
+        <input name="title" value="{{ lesson.title }}">
+      </label>
+      <label>
+        강사용 초안 / OCR 원문
+        <textarea name="draft_text" rows="12">{{ lesson.draft_text }}</textarea>
+      </label>
+      <label>
+        학생 공개 본문
+        <textarea name="published_text" rows="12">{{ lesson.published_text }}</textarea>
+      </label>
+      <label>
+        공개 상태
+        <select name="status">
+          <option value="draft" {% if lesson.status == "draft" %}selected{% endif %}>초안</option>
+          <option value="published" {% if lesson.status == "published" %}selected{% endif %}>학생 공개</option>
+        </select>
+      </label>
+      <button type="submit">저장</button>
+    </form>
+  </section>
+
+  <aside class="panel">
+    <h2>삽입 도구</h2>
+    <form method="post" enctype="multipart/form-data" action="/admin/lessons/{{ lesson.id }}/ocr" class="toolbox">
+      <h3>OCR 적용</h3>
+      <input type="file" name="image" accept="image/*,.pdf" required>
+      <button type="submit">OCR 적용</button>
+    </form>
+
+    <form method="post" enctype="multipart/form-data" action="/admin/lessons/{{ lesson.id }}/assets/image" class="toolbox">
+      <h3>이미지 삽입</h3>
+      <input name="title" placeholder="이미지 제목" required>
+      <input type="file" name="image" accept="image/*" required>
+      <button type="submit">이미지 추가</button>
+    </form>
+
+    <form method="post" action="/admin/lessons/{{ lesson.id }}/assets/link" class="toolbox">
+      <h3>YouTube/웹 링크 삽입</h3>
+      <input name="title" placeholder="링크 제목" required>
+      <input name="url" placeholder="https://..." required>
+      <button type="submit">링크 추가</button>
+    </form>
+  </aside>
+</div>
+
+<section class="panel">
+  <h2>문제 만들기</h2>
+  <form method="post" action="/admin/lessons/{{ lesson.id }}/questions/generate" class="ai-generate-form">
+    <strong>AI로 문제 자동 생성</strong>
+    <label>
+      4지선다
+      <input type="number" name="multiple_choice_count" min="0" max="10" value="3">
+    </label>
+    <label>
+      짧은 답
+      <input type="number" name="short_answer_count" min="0" max="10" value="2">
+    </label>
+    <label>
+      긴 답
+      <input type="number" name="long_answer_count" min="0" max="10" value="1">
+    </label>
+    <button type="submit">AI 문제 자동 생성</button>
+    <small>OPENAI_API_KEY가 없으면 샘플 문제가 생성됩니다.</small>
+  </form>
+
+  <form method="post" action="/admin/lessons/{{ lesson.id }}/questions" class="question-form">
+    <label>
+      문제 유형
+      <select name="question_type" id="question-type">
+        <option value="multiple_choice">4지선다 고르기</option>
+        <option value="short_answer">짧은 답</option>
+        <option value="long_answer">긴 답</option>
+      </select>
+    </label>
+    <label class="wide">
+      문제
+      <textarea name="prompt" rows="3" placeholder="예: 변압기가 직류에서 작동하지 않는 이유는?" required></textarea>
+    </label>
+    <div class="options">
+      <input name="option_a" placeholder="보기 A">
+      <input name="option_b" placeholder="보기 B">
+      <input name="option_c" placeholder="보기 C">
+      <input name="option_d" placeholder="보기 D">
+    </div>
+    <label>
+      정답/채점 기준
+      <input name="answer" placeholder="정답 또는 모범답안">
+    </label>
+    <label>
+      해설
+      <input name="explanation" placeholder="학생에게 보여줄 해설">
+    </label>
+    <label>
+      정답 공개
+      <select name="reveal_timing">
+        <option value="after_submit">제출 후 공개</option>
+        <option value="teacher_only">강사용만 보관</option>
+        <option value="immediate">즉시 공개</option>
+      </select>
+    </label>
+    <button type="submit">문제 추가</button>
+  </form>
+</section>
+
+<div class="two-column">
+  <section class="panel">
+    <h2>삽입된 자료</h2>
+    {% if assets %}
+      <div class="asset-list">
+      {% for asset in assets %}
+        <div class="asset-row">
+          <span>{{ "이미지" if asset.kind == "image" else "링크" }}</span>
+          <a href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">아직 삽입된 자료가 없습니다.</p>
+    {% endif %}
+  </section>
+
+  <section class="panel">
+    <h2>등록된 문제</h2>
+    {% if questions %}
+      <div class="question-list">
+      {% for question in questions %}
+        <article>
+          <span class="badge">{{ question.question_type }}</span>
+          <strong>{{ question.prompt }}</strong>
+          {% if question.options_json %}<pre>{{ question.options_json }}</pre>{% endif %}
+          <small>정답 공개: {{ question.reveal_timing }}</small>
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}
+      <p class="empty">아직 문제가 없습니다.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    environment:
+      APP_DATA_DIR: /data
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      TESSERACT_CMD: /usr/bin/tesseract
+      OCR_LANG: kor+eng
+    volumes:
+      - app-data:/data
+    expose:
+      - "8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  telegram-bot:
+    build: .
+    environment:
+      APP_DATA_DIR: /data
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      TESSERACT_CMD: /usr/bin/tesseract
+      OCR_LANG: kor+eng
+    volumes:
+      - app-data:/data
+    command: python -m app.telegram_bot
+    restart: unless-stopped
+
+volumes:
+  app-data:

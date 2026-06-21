@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% set title = "Student Preview" %}
+{% block content %}
+<section class="page-head">
+  <p class="eyebrow">Student Preview</p>
+  <h1>전기공학 기초와 변압기 입문</h1>
+  <p>전기의 원리부터 변압기의 산업 적용까지 순서대로 학습합니다.</p>
+</section>
+
+<section class="lesson-grid">
+  {% for lesson in lessons %}
+  <a class="lesson-card" href="/preview/lessons/{{ lesson.id }}">
+    <span class="lesson-no">Lesson {{ lesson.lesson_no }}</span>
+    <strong>{{ lesson.title }}</strong>
+    <small>학습하기</small>
+  </a>
+  {% endfor %}
+</section>
+{% endblock %}

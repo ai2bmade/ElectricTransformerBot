@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% set title = lesson.title %}
+{% block content %}
+<section class="page-head compact">
+  <p class="eyebrow">Lesson {{ lesson.lesson_no }}</p>
+  <h1>{{ lesson.title }}</h1>
+</section>
+
+<article class="reader">
+  <h2>수업 내용</h2>
+  <div class="body-text">
+    {{ (lesson.published_text or lesson.draft_text).replace("\n", "<br>") | safe }}
+  </div>
+</article>
+
+{% if assets %}
+<section class="panel">
+  <h2>보충 자료</h2>
+  <div class="media-grid">
+    {% for asset in assets %}
+      {% if asset.kind == "image" %}
+      <figure>
+        <img src="{{ asset.url }}" alt="{{ asset.title }}">
+        <figcaption>{{ asset.title }}</figcaption>
+      </figure>
+      {% else %}
+      <a class="link-tile" href="{{ asset.url }}" target="_blank">{{ asset.title }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if questions %}
+<section class="panel">
+  <h2>학습 문제</h2>
+  <div class="question-list">
+    {% for question in questions %}
+    <article>
+      <span class="badge">
+        {% if question.question_type == "multiple_choice" %}4지선다{% elif question.question_type == "short_answer" %}짧은 답{% else %}긴 답{% endif %}
+      </span>
+      <strong>{{ question.prompt }}</strong>
+      {% if question.options_json %}
+      <ol class="choices">
+        {% for option in question.options_json.split("\n") %}
+        <li>{{ option }}</li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+      {% if question.question_type == "long_answer" %}
+      <textarea rows="5" placeholder="답을 길게 작성해보세요."></textarea>
+      {% else %}
+      <input placeholder="답 입력">
+      {% endif %}
+      {% if question.reveal_timing == "immediate" %}
+      <p class="answer">정답: {{ question.answer }}</p>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
