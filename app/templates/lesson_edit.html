@@ -10,7 +10,7 @@
 <div class="two-column">
   <section class="panel">
     <h2>레슨 편집</h2>
-    <form method="post" action="/admin/lessons/{{ lesson.id }}/save" class="stack">
+    <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/save" class="stack">
       <label>
         제목
         <input name="title" value="{{ lesson.title }}">
@@ -36,20 +36,20 @@
 
   <aside class="panel">
     <h2>삽입 도구</h2>
-    <form method="post" enctype="multipart/form-data" action="/admin/lessons/{{ lesson.id }}/ocr" class="toolbox">
+    <form method="post" enctype="multipart/form-data" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/ocr" class="toolbox">
       <h3>OCR 적용</h3>
       <input type="file" name="image" accept="image/*,.pdf" required>
       <button type="submit">OCR 적용</button>
     </form>
 
-    <form method="post" enctype="multipart/form-data" action="/admin/lessons/{{ lesson.id }}/assets/image" class="toolbox">
+    <form method="post" enctype="multipart/form-data" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/assets/image" class="toolbox">
       <h3>이미지 삽입</h3>
       <input name="title" placeholder="이미지 제목" required>
       <input type="file" name="image" accept="image/*" required>
       <button type="submit">이미지 추가</button>
     </form>
 
-    <form method="post" action="/admin/lessons/{{ lesson.id }}/assets/link" class="toolbox">
+    <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/assets/link" class="toolbox">
       <h3>YouTube/웹 링크 삽입</h3>
       <input name="title" placeholder="링크 제목" required>
       <input name="url" placeholder="https://..." required>
@@ -60,7 +60,7 @@
 
 <section class="panel">
   <h2>문제 만들기</h2>
-  <form method="post" action="/admin/lessons/{{ lesson.id }}/questions/generate" class="ai-generate-form">
+  <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/questions/generate" class="ai-generate-form">
     <strong>AI로 문제 자동 생성</strong>
     <label>
       4지선다
@@ -78,7 +78,7 @@
     <small>OPENAI_API_KEY가 없으면 샘플 문제가 생성됩니다.</small>
   </form>
 
-  <form method="post" action="/admin/lessons/{{ lesson.id }}/questions" class="question-form">
+  <form method="post" action="{{ admin_prefix }}/lessons/{{ lesson.id }}/questions" class="question-form">
     <label>
       문제 유형
       <select name="question_type" id="question-type">

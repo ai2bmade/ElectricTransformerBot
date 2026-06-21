@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("APP_DATA_DIR", BASE_DIR / "data"))
 UPLOAD_DIR = DATA_DIR / "uploads"
 DB_PATH = DATA_DIR / "learning_app.sqlite3"
+ADMIN_PREFIX = os.getenv("ADMIN_PREFIX", "/admin220380").rstrip("/")
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -26,6 +27,7 @@ app = FastAPI(title="ElectricTransformerBot")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "app" / "static"), name="static")
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
+templates.env.globals["admin_prefix"] = ADMIN_PREFIX
 
 
 LESSON_SEED = [
@@ -146,10 +148,10 @@ def list_questions(db: sqlite3.Connection, lesson_id: int) -> list[sqlite3.Row]:
 
 @app.get("/", response_class=HTMLResponse)
 def home() -> RedirectResponse:
-    return RedirectResponse("/admin", status_code=303)
+    return RedirectResponse("/preview", status_code=303)
 
 
-@app.get("/admin", response_class=HTMLResponse)
+@app.get(ADMIN_PREFIX, response_class=HTMLResponse)
 def admin(request: Request) -> HTMLResponse:
     with connect() as db:
         lessons = list_lessons(db)
@@ -158,7 +160,7 @@ def admin(request: Request) -> HTMLResponse:
     )
 
 
-@app.get("/admin/lessons/{lesson_id}", response_class=HTMLResponse)
+@app.get(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}", response_class=HTMLResponse)
 def edit_lesson(request: Request, lesson_id: int) -> HTMLResponse:
     with connect() as db:
         lesson = get_lesson(db, lesson_id)
@@ -175,7 +177,7 @@ def edit_lesson(request: Request, lesson_id: int) -> HTMLResponse:
     )
 
 
-@app.post("/admin/lessons/{lesson_id}/save")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/save")
 def save_lesson(
     lesson_id: int,
     title: str = Form(...),
@@ -193,10 +195,10 @@ def save_lesson(
             (title, draft_text, published_text, status, lesson_id),
         )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
-@app.post("/admin/lessons/{lesson_id}/ocr")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/ocr")
 async def apply_ocr(lesson_id: int, image: UploadFile = File(...)) -> RedirectResponse:
     suffix = Path(image.filename or "upload.png").suffix or ".png"
     stored_name = f"{uuid.uuid4().hex}{suffix}"
@@ -216,7 +218,7 @@ async def apply_ocr(lesson_id: int, image: UploadFile = File(...)) -> RedirectRe
             (lesson_id, "image", image.filename or "OCR image", f"/uploads/{stored_name}"),
         )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
 def run_ocr(image_path: Path) -> str:
@@ -232,7 +234,7 @@ def run_ocr(image_path: Path) -> str:
         return f"OCR 실행 실패: {exc}"
 
 
-@app.post("/admin/lessons/{lesson_id}/assets/image")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/assets/image")
 async def add_image(
     lesson_id: int,
     title: str = Form(...),
@@ -249,10 +251,10 @@ async def add_image(
             (lesson_id, "image", title, f"/uploads/{stored_name}"),
         )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
-@app.post("/admin/lessons/{lesson_id}/assets/link")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/assets/link")
 def add_link(
     lesson_id: int,
     title: str = Form(...),
@@ -264,10 +266,10 @@ def add_link(
             (lesson_id, "link", title, url),
         )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
-@app.post("/admin/lessons/{lesson_id}/questions")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/questions")
 def add_question(
     lesson_id: int,
     question_type: str = Form(...),
@@ -294,10 +296,10 @@ def add_question(
             (lesson_id, question_type, prompt, options, answer, explanation, reveal_timing),
         )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
-@app.post("/admin/lessons/{lesson_id}/questions/generate")
+@app.post(f"{ADMIN_PREFIX}/lessons/{{lesson_id}}/questions/generate")
 def generate_questions(
     lesson_id: int,
     multiple_choice_count: int = Form(3),
@@ -333,7 +335,7 @@ def generate_questions(
                 ),
             )
         db.commit()
-    return RedirectResponse(f"/admin/lessons/{lesson_id}", status_code=303)
+    return RedirectResponse(f"{ADMIN_PREFIX}/lessons/{lesson_id}", status_code=303)
 
 
 @app.get("/preview", response_class=HTMLResponse)

@@ -24,7 +24,7 @@ python -m venv .venv
 
 브라우저:
 
-- Admin: http://127.0.0.1:8000/admin
+- Admin: http://127.0.0.1:8000/admin220380
 - Student Preview: http://127.0.0.1:8000/preview
 
 ## OCR
@@ -36,3 +36,5 @@ python -m venv .venv
 ```powershell
 $env:TESSERACT_CMD='G:\Codex\tools\tesseract\Tesseract-OCR\tesseract.exe'
 ```
+
+강사용 주소는 환경변수 `ADMIN_PREFIX`로 바꿀 수 있습니다.

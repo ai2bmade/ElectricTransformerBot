@@ -9,7 +9,7 @@
 
 <section class="lesson-grid">
   {% for lesson in lessons %}
-  <a class="lesson-card" href="/admin/lessons/{{ lesson.id }}">
+  <a class="lesson-card" href="{{ admin_prefix }}/lessons/{{ lesson.id }}">
     <span class="lesson-no">Lesson {{ lesson.lesson_no }}</span>
     <strong>{{ lesson.title }}</strong>
     <small>{{ "공개" if lesson.status == "published" else "초안" }}</small>

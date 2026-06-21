@@ -5,6 +5,7 @@ services:
       APP_DATA_DIR: /data
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4.1-mini}
+      ADMIN_PREFIX: ${ADMIN_PREFIX:-/admin220380}
       TESSERACT_CMD: /usr/bin/tesseract
       OCR_LANG: kor+eng
     volumes:
