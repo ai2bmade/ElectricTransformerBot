@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from app.markdown_render import render_markdown
 from app.openai_service import generate_questions_for_lesson
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -148,7 +149,7 @@ def list_questions(db: sqlite3.Connection, lesson_id: int) -> list[sqlite3.Row]:
 
 @app.get("/", response_class=HTMLResponse)
 def home() -> RedirectResponse:
-    return RedirectResponse("/preview", status_code=303)
+    return RedirectResponse("/lessons", status_code=303)
 
 
 @app.get(ADMIN_PREFIX, response_class=HTMLResponse)
@@ -156,7 +157,8 @@ def admin(request: Request) -> HTMLResponse:
     with connect() as db:
         lessons = list_lessons(db)
     return templates.TemplateResponse(
-        "admin.html", {"request": request, "lessons": lessons}
+        "admin.html",
+        {"request": request, "lessons": lessons, "show_admin_nav": True},
     )
 
 
@@ -173,6 +175,7 @@ def edit_lesson(request: Request, lesson_id: int) -> HTMLResponse:
             "lesson": lesson,
             "assets": assets,
             "questions": questions,
+            "show_admin_nav": True,
         },
     )
 
@@ -339,30 +342,44 @@ def generate_questions(
 
 
 @app.get("/preview", response_class=HTMLResponse)
-def preview(request: Request) -> HTMLResponse:
+def old_preview() -> RedirectResponse:
+    return RedirectResponse("/lessons", status_code=303)
+
+
+@app.get("/lessons", response_class=HTMLResponse)
+def lessons(request: Request) -> HTMLResponse:
     with connect() as db:
-        lessons = db.execute(
+        lesson_rows = db.execute(
             "SELECT * FROM lessons WHERE status = 'published' ORDER BY lesson_no"
         ).fetchall()
-        if not lessons:
-            lessons = list_lessons(db)
+        if not lesson_rows:
+            lesson_rows = list_lessons(db)
     return templates.TemplateResponse(
-        "preview.html", {"request": request, "lessons": lessons}
+        "preview.html",
+        {"request": request, "lessons": lesson_rows, "show_student_nav": True},
     )
 
 
 @app.get("/preview/lessons/{lesson_id}", response_class=HTMLResponse)
+def old_preview_lesson(lesson_id: int) -> RedirectResponse:
+    return RedirectResponse(f"/lessons/{lesson_id}", status_code=303)
+
+
+@app.get("/lessons/{lesson_id}", response_class=HTMLResponse)
 def preview_lesson(request: Request, lesson_id: int) -> HTMLResponse:
     with connect() as db:
         lesson = get_lesson(db, lesson_id)
         assets = list_assets(db, lesson_id)
         questions = list_questions(db, lesson_id)
+    lesson_text = lesson["published_text"] or lesson["draft_text"]
     return templates.TemplateResponse(
         "lesson_preview.html",
         {
             "request": request,
             "lesson": lesson,
+            "lesson_html": render_markdown(lesson_text),
             "assets": assets,
             "questions": questions,
+            "show_student_nav": True,
         },
     )

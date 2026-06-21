@@ -25,7 +25,22 @@ python -m venv .venv
 브라우저:
 
 - Admin: http://127.0.0.1:8000/admin220380
-- Student Preview: http://127.0.0.1:8000/preview
+- Student Lessons: http://127.0.0.1:8000/lessons
+
+학생용 주소는 `/lessons`, 강사용 주소는 `/admin220380`입니다.
+레슨 본문은 Markdown으로 작성할 수 있으며, 표와 코드블럭을 지원합니다.
+
+예:
+
+````markdown
+## 옴의 법칙
+
+```python
+v = 220
+r = 110
+print(v / r)
+```
+````
 
 ## OCR
 

@@ -8,11 +8,17 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="/preview">ElectricTransformerBot</a>
+    <a class="brand" href="/lessons">ElectricTransformerBot</a>
+    {% if show_admin_nav %}
     <nav>
       <a href="{{ admin_prefix }}">Lecture Admin</a>
-      <a href="/preview">Student Preview</a>
+      <a href="/lessons">Student Lessons</a>
     </nav>
+    {% elif show_student_nav %}
+    <nav>
+      <a href="/lessons">Lessons</a>
+    </nav>
+    {% endif %}
   </header>
   <main class="shell">
     {% block content %}{% endblock %}
